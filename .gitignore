@@ -1,0 +1,16 @@
+# UnityLib
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+
+#ide
+*.csproj
+*.unityproj
+*.pidb
+*.sln
+build
+
+#OS junk files
+Thumbs.db
+*.DS_Store
+

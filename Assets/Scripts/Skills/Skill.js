@@ -1,0 +1,4 @@
+#pragma strict
+class Skill {
+	
+}
