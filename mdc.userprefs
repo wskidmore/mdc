@@ -1,11 +1,12 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Spells\Spell.js">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Spells\FireBolt.js">
     <Files>
-      <File FileName="Assets\Scripts\Spells\FireBolt.js" Line="25" Column="3" />
+      <File FileName="Assets\Scripts\Spells\FireBolt.js" Line="14" Column="79" />
+      <File FileName="Assets\Scripts\Spells\Spell.js" Line="14" Column="1" />
       <File FileName="Assets\Scripts\Player\CharacterManager.js" Line="18" Column="1" />
       <File FileName="Assets\Scripts\Player\Character.js" Line="29" Column="19" />
-      <File FileName="Assets\Scripts\Spells\Spell.js" Line="17" Column="22" />
+      <File FileName="Assets\Scripts\Spells\Straight.js" Line="15" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
