@@ -1,12 +1,13 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Spells\FireBolt.js">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\NPC\NPC.js">
     <Files>
-      <File FileName="Assets\Scripts\Spells\FireBolt.js" Line="14" Column="79" />
-      <File FileName="Assets\Scripts\Spells\Spell.js" Line="14" Column="1" />
-      <File FileName="Assets\Scripts\Player\CharacterManager.js" Line="18" Column="1" />
-      <File FileName="Assets\Scripts\Player\Character.js" Line="29" Column="19" />
+      <File FileName="Assets\Scripts\Spells\Spell.js" Line="14" Column="2" />
+      <File FileName="Assets\Scripts\Spells\FireBolt.js" Line="5" Column="23" />
+      <File FileName="Assets\Scripts\Player\CharacterManager.js" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\Player\Character.js" Line="1" Column="1" />
       <File FileName="Assets\Scripts\Spells\Straight.js" Line="15" Column="1" />
+      <File FileName="Assets\Scripts\NPC\NPC.js" Line="7" Column="29" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
