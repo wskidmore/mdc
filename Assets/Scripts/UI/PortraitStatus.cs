@@ -10,6 +10,13 @@ public class PortraitStatus : MonoBehaviour
     private string unActiveName = "empty_char";
     private InfoTab infoTab;
 
+    void OnPress(bool pressed)
+    {
+        if (enabled && target != null && pressed)
+        {
+            Activate();
+        }
+    }
     // Use this for initialization
     void Start()
     {
@@ -32,7 +39,7 @@ public class PortraitStatus : MonoBehaviour
 
     void OnClick()
     {
-        infoTab.ApplyChar(CharIndex);
         NGUITools.SetActive(PanelGameObject, true);
+        infoTab.ShowTab("same", CharIndex);
     }
 }

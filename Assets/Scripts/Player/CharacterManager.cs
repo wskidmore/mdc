@@ -33,9 +33,6 @@ public class CharacterManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // detect danger
-        GameStateManager.DangerProximity = 3;
-
         // detect char switch
         if (Input.GetButtonUp("Tab") && !GameStateManager.Paused)
         {
