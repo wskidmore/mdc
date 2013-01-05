@@ -1,17 +1,24 @@
 using UnityEngine;
 using System.Collections;
 
-
 public class FireBolt : Spell
 {
+    [JsonFx.Json.JsonIgnoreAttribute]
     public int Cost = 1;
+    [JsonFx.Json.JsonIgnoreAttribute]
     public float Speed = 2F;
-    public GameObject Prefab = Resources.Load("FireBolt", typeof(GameObject)) as GameObject;
-
+    [JsonFx.Json.JsonIgnoreAttribute]
+    public GameObject Prefab = Resources.Load("FireBolt", typeof (GameObject)) as GameObject;
     private GameObject _instance;
 
-    public override string Name { get { return "FireBolt"; } }
-
+    public override string Name {
+        get {
+            return "FireBolt";
+        }
+        set {
+            base.Name = value;
+        }
+    }
 
     public override bool OnFire(Transform playerTransform, Character character)
     {

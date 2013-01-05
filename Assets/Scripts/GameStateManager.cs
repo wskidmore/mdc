@@ -10,7 +10,6 @@ public class GameStateManager : MonoBehaviour
     public GameObject DangerStatus;
     public static bool Paused = false;
     public static SpellRegistry SpellRegistry = new SpellRegistry();
-
     private static readonly Dictionary<string, int> DangerProx = new Dictionary<string, int>();
     private static int _maxDanger = 0;
     private static DangerProxStatus _dangerProxStatus;
@@ -25,7 +24,8 @@ public class GameStateManager : MonoBehaviour
     void Start()
     {
         NGUITools.SetActive(PanelGameObject, false);
-        if (_dangerProxStatus == null) _dangerProxStatus = DangerStatus.GetComponent<DangerProxStatus>();
+        if (_dangerProxStatus == null)
+            _dangerProxStatus = DangerStatus.GetComponent<DangerProxStatus>();
     }
 
     // Update is called once per frame
@@ -39,36 +39,38 @@ public class GameStateManager : MonoBehaviour
 
     public static void OnEnterCautionTrigger(int id)
     {
-        Debug.Log("Enter Caution");
-        DangerProx[id.ToString(CultureInfo.InvariantCulture)] =  1;
+        DangerProx[id.ToString(CultureInfo.InvariantCulture)] = 1;
 
-        if (1 <= _maxDanger) return;
+        if (1 <= _maxDanger)
+            return;
 
         _maxDanger = 1;
         _dangerProxStatus.Set(1);
     }
+
     public static void OnLeaveCautionTrigger(int id)
     {
-        Debug.Log("Leave Caution");
         DangerProx.Remove(id.ToString(CultureInfo.InvariantCulture));
-        if (DangerProx.Count > 1) return;
+        if (DangerProx.Count > 1)
+            return;
 
         _maxDanger = 0;
         _dangerProxStatus.Set(0);
     }
+
     public static void OnEnterDangerTrigger(int id)
     {
-        Debug.Log("Enter Danger");
         DangerProx[id.ToString(CultureInfo.InvariantCulture)] = 2;
 
-        if (2 <= _maxDanger) return;
+        if (2 <= _maxDanger)
+            return;
 
         _maxDanger = 2;
         _dangerProxStatus.Set(2);
     }
+
     public static void OnLeaveDangerTrigger(int id)
     {
-        Debug.Log("Leave Danger");
         DangerProx.Remove(id.ToString(CultureInfo.InvariantCulture));
 
         if (DangerProx.Count == 0)
@@ -77,7 +79,8 @@ public class GameStateManager : MonoBehaviour
             _dangerProxStatus.Set(0);
         }
 
-        if (DangerProx.ContainsValue(2)) return;
+        if (DangerProx.ContainsValue(2))
+            return;
 
         _maxDanger = 1;
         _dangerProxStatus.Set(1);

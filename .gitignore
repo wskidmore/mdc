@@ -8,7 +8,11 @@
 *.unityproj
 *.pidb
 *.sln
+*.sou
 build
+
+#ReSharper
+_ReSharper.mdc-csharp
 
 #OS junk files
 Thumbs.db

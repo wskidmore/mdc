@@ -387,14 +387,23 @@ public class UIFont : MonoBehaviour
 
 	public void MarkAsDirty ()
 	{
+#if UNITY_EDITOR
+		UnityEditor.EditorUtility.SetDirty(gameObject);
+#endif
+		if (mReplacement != null)
+		{
+			mReplacement.MarkAsDirty();
+			return;
+		}
+
 		mSprite = null;
 		UILabel[] labels = NGUITools.FindActive<UILabel>();
 
 		for (int i = 0, imax = labels.Length; i < imax; ++i)
 		{
 			UILabel lbl = labels[i];
-
-			if (lbl.enabled && lbl.gameObject.active && CheckIfRelated(this, lbl.font))
+			
+			if (lbl.enabled && NGUITools.GetActive(lbl.gameObject) && CheckIfRelated(this, lbl.font))
 			{
 				UIFont fnt = lbl.font;
 				lbl.font = null;
@@ -484,6 +493,59 @@ public class UIFont : MonoBehaviour
 	}
 
 	/// <summary>
+	/// Different line wrapping functionality -- contributed by MightyM.
+	/// http://www.tasharen.com/forum/index.php?topic=1049.0
+	/// </summary>
+
+	public string GetEndOfLineThatFits (string text, float maxWidth, bool encoding, SymbolStyle symbolStyle)
+	{
+		if (mReplacement != null) return mReplacement.GetEndOfLineThatFits(text, maxWidth, encoding, symbolStyle);
+
+		int lineWidth = Mathf.RoundToInt(maxWidth * size);
+		if (lineWidth < 1) return text;
+
+		int textLength = text.Length;
+		int remainingWidth = lineWidth;
+		BMGlyph followingGlyph = null;
+		int currentCharacterIndex = textLength;
+
+		while (currentCharacterIndex > 0 && remainingWidth > 0)
+		{
+			char currentCharacter = text[--currentCharacterIndex];
+
+			// See if there is a symbol matching this text
+			BMSymbol symbol = (encoding && symbolStyle != SymbolStyle.None) ? mFont.MatchSymbol(text, currentCharacterIndex, textLength) : null;
+
+			// Find the glyph for this character
+			BMGlyph glyph = (symbol == null) ? mFont.GetGlyph(currentCharacter) : null;
+
+			// Calculate how wide this symbol or character is going to be
+			int glyphWidth = mSpacingX;
+
+			if (symbol != null)
+			{
+				glyphWidth += symbol.width;
+			}
+			else if (glyph != null)
+			{
+				glyphWidth += glyph.advance + ((followingGlyph == null) ? 0 : followingGlyph.GetKerning(currentCharacter));
+				followingGlyph = glyph;
+			}
+			else
+			{
+				followingGlyph = null;
+				continue;
+			}
+
+			// Remaining width after this glyph gets printed
+			remainingWidth -= glyphWidth;
+		}
+		if (remainingWidth < 0) ++currentCharacterIndex;
+		return text.Substring(currentCharacterIndex, textLength - currentCharacterIndex);
+	}
+
+
+	/// <summary>
 	/// Text wrapping functionality. The 'maxWidth' should be in local coordinates (take pixels and divide them by transform's scale).
 	/// </summary>
 
@@ -548,8 +610,11 @@ public class UIFont : MonoBehaviour
 					}
 					else if (offset + 7 < textLength && text[offset + 7] == ']')
 					{
-						offset += 7;
-						continue;
+						if (NGUITools.EncodeColor(NGUITools.ParseColor(text, offset + 1)) == text.Substring(offset + 1, 6).ToUpper())
+						{
+							offset += 7;
+							continue;
+						}
 					}
 				}
 			}
@@ -678,8 +743,13 @@ public class UIFont : MonoBehaviour
 	/// Note: 'lineWidth' parameter should be in pixels.
 	/// </summary>
 
-	public void Print (string text, Color color, BetterList<Vector3> verts, BetterList<Vector2> uvs, BetterList<Color> cols,
+#if UNITY_3_5_4
+	public void Print (string text, Color32 color, BetterList<Vector3> verts, BetterList<Vector2> uvs, BetterList<Color> cols,
 		bool encoding, SymbolStyle symbolStyle, Alignment alignment, int lineWidth)
+#else
+	public void Print (string text, Color32 color, BetterList<Vector3> verts, BetterList<Vector2> uvs, BetterList<Color32> cols,
+		bool encoding, SymbolStyle symbolStyle, Alignment alignment, int lineWidth)
+#endif
 	{
 		if (mReplacement != null)
 		{
@@ -833,7 +903,7 @@ public class UIFont : MonoBehaviour
 					}
 					else
 					{
-						Color col = Color.white;
+						Color32 col = Color.white;
 						col.a = color.a;
 						for (int b = 0; b < 4; ++b) cols.Add(col);
 					}

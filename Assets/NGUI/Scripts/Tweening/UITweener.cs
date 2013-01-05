@@ -1,4 +1,4 @@
-﻿//----------------------------------------------
+//----------------------------------------------
 //            NGUI: Next-Gen UI kit
 // Copyright © 2011-2012 Tasharen Entertainment
 //----------------------------------------------
@@ -18,6 +18,8 @@ public abstract class UITweener : IgnoreTimeScale
 		EaseIn,
 		EaseOut,
 		EaseInOut,
+		BounceIn,
+		BounceOut,
 	}
 
 	public enum Style
@@ -26,6 +28,14 @@ public abstract class UITweener : IgnoreTimeScale
 		Loop,
 		PingPong,
 	}
+
+	public delegate void OnFinished (UITweener tween);
+
+	/// <summary>
+	/// Delegate for subscriptions. Faster than using the 'eventReceiver' and allows for multiple receivers.
+	/// </summary>
+
+	public OnFinished onFinished;
 
 	/// <summary>
 	/// Tweening method used.
@@ -38,6 +48,12 @@ public abstract class UITweener : IgnoreTimeScale
 	/// </summary>
 
 	public Style style = Style.Once;
+
+	/// <summary>
+	/// Whether the tween will ignore the timescale, making it work while the game is paused.
+	/// </summary>
+
+	public bool ignoreTimeScale = true;
 
 	/// <summary>
 	/// How long will the tweener wait before starting the tween?
@@ -101,23 +117,25 @@ public abstract class UITweener : IgnoreTimeScale
 	/// Tween factor, 0-1 range.
 	/// </summary>
 
-	public float factor { get { return mFactor; } }
+	public float tweenFactor { get { return mFactor; } }
 
 	/// <summary>
-	/// Direction in which the tween is currently playing.
+	/// Direction that the tween is currently playing in.
 	/// </summary>
 
 	public AnimationOrTween.Direction direction { get { return mAmountPerDelta < 0f ? AnimationOrTween.Direction.Reverse : AnimationOrTween.Direction.Forward; } }
 
 	/// <summary>
+	/// Record the starting time.
+	/// </summary>
+
+	protected override void OnEnable () { base.OnEnable(); mStartTime = Time.realtimeSinceStartup + delay; }
+
+	/// <summary>
 	/// Update on start, so there is no frame in-between.
 	/// </summary>
 
-	void Start ()
-	{
-		mStartTime = Time.time + delay;
-		Update();
-	}
+	void Start () { mStartTime = Time.realtimeSinceStartup + delay; Update(); }
 
 	/// <summary>
 	/// Update the tweening factor and call the virtual update function.
@@ -125,8 +143,8 @@ public abstract class UITweener : IgnoreTimeScale
 
 	void Update ()
 	{
-		if (Time.time < mStartTime) return;
-		float delta = UpdateRealTimeDelta();
+		float delta = ignoreTimeScale ? UpdateRealTimeDelta() : Time.deltaTime;
+		if (Time.realtimeSinceStartup < mStartTime) return;
 
 		// Advance the sampling factor
 		mFactor += amountPerDelta * delta;
@@ -155,8 +173,38 @@ public abstract class UITweener : IgnoreTimeScale
 			}
 		}
 
+		// If the factor goes out of range and this is a one-time tweening operation, disable the script
+		if ((style == Style.Once) && (mFactor > 1f || mFactor < 0f))
+		{
+			mFactor = Mathf.Clamp01(mFactor);
+			Sample(mFactor, true);
+
+			// Notify the listener delegate
+			if (onFinished != null) onFinished(this);
+
+			// Notify the event listener target
+			if (eventReceiver != null && !string.IsNullOrEmpty(callWhenFinished))
+			{
+				eventReceiver.SendMessage(callWhenFinished, this, SendMessageOptions.DontRequireReceiver);
+			}
+
+			// Disable this script unless the function calls above changed something
+			if (mFactor == 1f && mAmountPerDelta > 0f || mFactor == 0f && mAmountPerDelta < 0f)
+			{
+				enabled = false;
+			}
+		}
+		else Sample(mFactor, false);
+	}
+
+	/// <summary>
+	/// Sample the tween at the specified factor.
+	/// </summary>
+
+	public void Sample (float factor, bool isFinished)
+	{
 		// Calculate the sampling value
-		float val = Mathf.Clamp01(mFactor);
+		float val = Mathf.Clamp01(factor);
 
 		if (method == Method.EaseIn)
 		{
@@ -187,34 +235,41 @@ public abstract class UITweener : IgnoreTimeScale
 				val = sign * val * 0.5f + 0.5f;
 			}
 		}
+		else if (method == Method.BounceIn)
+		{
+			val = BounceLogic(val);
+		}
+		else if (method == Method.BounceOut)
+		{
+			val = 1f - BounceLogic(1f - val);
+		}
 
 		// Call the virtual update
-		OnUpdate(val);
+		OnUpdate(val, isFinished);
+	}
 
-		// If the factor goes out of range and this is a one-time tweening operation, disable the script
-		if (style == Style.Once && (mFactor > 1f || mFactor < 0f))
+	/// <summary>
+	/// Main Bounce logic to simplify the Sample function
+	/// </summary>
+	private float BounceLogic(float val)
+	{
+		if (val < 0.363636f) // 0.363636f changed from (1/ 2.75f) for speed reasons.
 		{
-			mFactor = Mathf.Clamp01(mFactor);
-
-			if (string.IsNullOrEmpty(callWhenFinished))
-			{
-				enabled = false;
-			}
-			else
-			{
-				if (eventReceiver != null && !string.IsNullOrEmpty(callWhenFinished))
-				{
-					// Notify the event listener target
-					eventReceiver.SendMessage(callWhenFinished, this, SendMessageOptions.DontRequireReceiver);
-				}
-
-				// Disable this script unless the SendMessage function above changed something
-				if (mFactor == 1f && mAmountPerDelta > 0f || mFactor == 0f && mAmountPerDelta < 0f)
-				{
-					enabled = false;
-				}
-			}
+			val = 7.5685f * val * val;
 		}
+		else if (val < 0.727272f) // 0.727272f changed from (2/ 2.75f) for speed reasons.
+		{
+			val = 7.5625f * (val -= 0.545454f) * val + 0.75f; // 0.545454f changed from (1.5f / 2.75f) for speed reasons.
+		}
+		else if (val < 0.909090f) // 0.909090f changed from (2.5 / 2.75f) for speed reasons.
+		{
+			val = 7.5625f * (val -= 0.818181f) * val + 0.9375f; // 0.818181f changed from (2.25f / 2.75f) for speed reasons.
+		}
+		else
+		{
+			val = 7.5625f * (val -= 0.9545454f) * val + 0.984375f; // 0.9545454f changed from (2.625f / 2.75f) for speed reasons.
+		}
+		return val;
 	}
 
 	/// <summary>
@@ -228,14 +283,11 @@ public abstract class UITweener : IgnoreTimeScale
 		enabled = true;
 	}
 
-	[System.Obsolete("Use Tweener.Play instead")]
-	public void Animate (bool forward) { Play(forward); }
-
 	/// <summary>
 	/// Manually reset the tweener's state to the beginning.
 	/// </summary>
 
-	public void Reset() { mFactor = (mAmountPerDelta < 0f) ? 1f : 0f; }
+	public void Reset() { mFactor = (mAmountPerDelta < 0f) ? 1f : 0f; Sample(mFactor, false); }
 
 	/// <summary>
 	/// Manually start the tweening process, reversing its direction.
@@ -258,7 +310,7 @@ public abstract class UITweener : IgnoreTimeScale
 	/// Actual tweening logic should go here.
 	/// </summary>
 
-	abstract protected void OnUpdate (float factor);
+	abstract protected void OnUpdate (float factor, bool isFinished);
 
 	/// <summary>
 	/// Starts the tweening operation.
@@ -274,7 +326,11 @@ public abstract class UITweener : IgnoreTimeScale
 #endif
 		comp.duration = duration;
 		comp.mFactor = 0f;
+		comp.mAmountPerDelta = Mathf.Abs(comp.mAmountPerDelta);
 		comp.style = Style.Once;
+		comp.eventReceiver = null;
+		comp.callWhenFinished = null;
+		comp.onFinished = null;
 		comp.enabled = true;
 		return comp;
 	}

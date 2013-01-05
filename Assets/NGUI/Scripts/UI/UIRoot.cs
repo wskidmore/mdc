@@ -17,18 +17,85 @@ public class UIRoot : MonoBehaviour
 {
 	static List<UIRoot> mRoots = new List<UIRoot>();
 
-	public bool automatic = true;
-	public int manualHeight = 800;
+	/// <summary>
+	/// List of all UIRoots present in the scene.
+	/// </summary>
+
+	static public List<UIRoot> list { get { return mRoots; } }
 
 	Transform mTrans;
 
-	void Awake () { mRoots.Add(this); }
+	/// <summary>
+	/// If set to 'true', the UIRoot will be scaled automatically as the resolution changes, and will keep the UI under it
+	/// pixel-perfect. If set to 'false', 'manualHeight' is used instead, and the UI will scale proportionally to screen's height,
+	/// always remaining the same relative size regardless of the resolution changes.
+	/// </summary>
+
+	public bool automatic = true;
+
+	/// <summary>
+	/// Height of the screen when 'automatic' is turned off.
+	/// </summary>
+
+	public int manualHeight = 800;
+
+	/// <summary>
+	/// If the screen height goes below this value, it will be as if 'automatic' is turned off with the 'manualHeight' set to this value.
+	/// </summary>
+
+	public int minimumHeight = 320;
+
+	/// <summary>
+	/// If the screen height goes above this value, it will be as if 'automatic' is turned off with the 'manualHeight' set to this value.
+	/// </summary>
+
+	public int maximumHeight = 1080;
+
+	/// <summary>
+	/// UI Root's active height, based on the size of the screen.
+	/// </summary>
+
+	public int activeHeight
+	{
+		get
+		{
+			int height = Mathf.Max(2, Screen.height);
+
+			if (automatic)
+			{
+				if (height < minimumHeight) return minimumHeight;
+				if (height > maximumHeight) return maximumHeight;
+				return height;
+			}
+			return manualHeight;
+		}
+	}
+
+	/// <summary>
+	/// Pixel size adjustment. Most of the time it's at 1, unless 'automatic' is turned off.
+	/// </summary>
+
+	public float pixelSizeAdjustment
+	{
+		get
+		{
+			float height = Screen.height;
+
+			if (automatic)
+			{
+				if (height < minimumHeight) return minimumHeight / height;
+				if (height > maximumHeight) return maximumHeight / height;
+				return 1f;
+			}
+			return manualHeight / height;
+		}
+	}
+
+	void Awake () { mTrans = transform; mRoots.Add(this); }
 	void OnDestroy () { mRoots.Remove(this); }
 
 	void Start ()
 	{
-		mTrans = transform;
-
 		UIOrthoCamera oc = GetComponentInChildren<UIOrthoCamera>();
 		
 		if (oc != null)
@@ -42,16 +109,17 @@ public class UIRoot : MonoBehaviour
 
 	void Update ()
 	{
-		manualHeight = Mathf.Max(2, automatic ? Screen.height : manualHeight);
-
-		float size = 2f / manualHeight;
-		Vector3 ls = mTrans.localScale;
-
-		if (!(Mathf.Abs(ls.x - size) <= float.Epsilon) ||
-			!(Mathf.Abs(ls.y - size) <= float.Epsilon) ||
-			!(Mathf.Abs(ls.z - size) <= float.Epsilon))
+		if (mTrans != null)
 		{
-			mTrans.localScale = new Vector3(size, size, size);
+			float size = 2f / activeHeight;
+			Vector3 ls = mTrans.localScale;
+
+			if (!(Mathf.Abs(ls.x - size) <= float.Epsilon) ||
+				!(Mathf.Abs(ls.y - size) <= float.Epsilon) ||
+				!(Mathf.Abs(ls.z - size) <= float.Epsilon))
+			{
+				mTrans.localScale = new Vector3(size, size, size);
+			}
 		}
 	}
 

@@ -28,6 +28,7 @@ public class UILabel : UIWidget
 	[HideInInspector][SerializeField] Effect mEffectStyle = Effect.None;
 	[HideInInspector][SerializeField] Color mEffectColor = Color.black;
 	[HideInInspector][SerializeField] UIFont.SymbolStyle mSymbols = UIFont.SymbolStyle.Uncolored;
+	[HideInInspector][SerializeField] Vector2 mEffectDistance = Vector2.one;
 
 	/// <summary>
 	/// Obsolete, do not use. Use 'mMaxLineWidth' instead.
@@ -53,7 +54,6 @@ public class UILabel : UIWidget
 	bool mLastPass = false;
 	bool mLastShow = false;
 	Effect mLastEffect = Effect.None;
-	Color mLastColor = Color.black;
 	Vector3 mSize = Vector3.zero;
 
 	/// <summary>
@@ -71,8 +71,7 @@ public class UILabel : UIWidget
 				mLastCount		!= mMaxLineCount ||
 				mLastPass		!= mPassword ||
 				mLastShow		!= mShowLastChar ||
-				mLastEffect		!= mEffectStyle ||
-				mLastColor		!= mEffectColor;
+				mLastEffect		!= mEffectStyle;
 		}
 		set
 		{
@@ -91,7 +90,6 @@ public class UILabel : UIWidget
 				mLastPass			= mPassword;
 				mLastShow			= mShowLastChar;
 				mLastEffect			= mEffectStyle;
-				mLastColor			= mEffectColor;
 			}
 		}
 	}
@@ -256,10 +254,13 @@ public class UILabel : UIWidget
 		{
 			if (mPassword != value)
 			{
-				mPassword		= value;
-				mMaxLineCount	= 1;
-				mEncoding		= false;
-				hasChanged		= true;
+				if (value)
+				{
+					mMaxLineCount = 1;
+					mEncoding = false;
+				}
+				mPassword = value;
+				hasChanged = true;
 			}
 		}
 	}
@@ -316,10 +317,30 @@ public class UILabel : UIWidget
 		}
 		set
 		{
-			if (mEffectColor != value)
+			if (!mEffectColor.Equals(value))
 			{
 				mEffectColor = value;
 				if (mEffectStyle != Effect.None) hasChanged = true;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Effect distance in pixels.
+	/// </summary>
+
+	public Vector2 effectDistance
+	{
+		get
+		{
+			return mEffectDistance;
+		}
+		set
+		{
+			if (mEffectDistance != value)
+			{
+				mEffectDistance = value;
+				hasChanged = true;
 			}
 		}
 	}
@@ -419,8 +440,6 @@ public class UILabel : UIWidget
 
 		if (mPassword)
 		{
-			mProcessedText = mFont.WrapText(mProcessedText, 100000f, 1, false, UIFont.SymbolStyle.None);
-
 			string hidden = "";
 
 			if (mShowLastChar)
@@ -432,7 +451,8 @@ public class UILabel : UIWidget
 			{
 				for (int i = 0, imax = mProcessedText.Length; i < imax; ++i) hidden += "*";
 			}
-			mProcessedText = hidden;
+			mProcessedText = mFont.WrapText(hidden, mMaxLineWidth / cachedTransform.localScale.x, mMaxLineCount,
+				false, UIFont.SymbolStyle.None);
 		}
 		else if (mMaxLineWidth > 0)
 		{
@@ -526,11 +546,21 @@ public class UILabel : UIWidget
 	/// Apply a shadow effect to the buffer.
 	/// </summary>
 
+#if UNITY_3_5_4
 	void ApplyShadow (BetterList<Vector3> verts, BetterList<Vector2> uvs, BetterList<Color> cols, int start, int end, float x, float y)
+#else
+	void ApplyShadow (BetterList<Vector3> verts, BetterList<Vector2> uvs, BetterList<Color32> cols, int start, int end, float x, float y)
+#endif
 	{
+#if UNITY_3_5_4
 		Color c = mEffectColor;
-		c.a *= color.a;
-
+		c.a = c.a * color.a;
+		Color col = c;
+#else
+		Color c = mEffectColor;
+		c.a = c.a * color.a;
+		Color32 col = c;
+#endif
 		for (int i = start; i < end; ++i)
 		{
 			verts.Add(verts.buffer[i]);
@@ -541,7 +571,7 @@ public class UILabel : UIWidget
 			v.x += x;
 			v.y += y;
 			verts.buffer[i] = v;
-			cols.buffer[i] = c;
+			cols.buffer[i] = col;
 		}
 	}
 
@@ -549,7 +579,11 @@ public class UILabel : UIWidget
 	/// Draw the label.
 	/// </summary>
 
+#if UNITY_3_5_4
 	public override void OnFill (BetterList<Vector3> verts, BetterList<Vector2> uvs, BetterList<Color> cols)
+#else
+	public override void OnFill (BetterList<Vector3> verts, BetterList<Vector2> uvs, BetterList<Color32> cols)
+#endif
 	{
 		if (mFont == null) return;
 		MakePositionPerfect();
@@ -581,24 +615,27 @@ public class UILabel : UIWidget
 			int end = verts.size;
 			float pixel =  1f / mFont.size;
 
-			ApplyShadow(verts, uvs, cols, offset, end, pixel, -pixel);
+			float fx = pixel * mEffectDistance.x;
+			float fy = pixel * mEffectDistance.y;
+
+			ApplyShadow(verts, uvs, cols, offset, end, fx, -fy);
 
 			if (effectStyle == Effect.Outline)
 			{
 				offset = end;
 				end = verts.size;
 
-				ApplyShadow(verts, uvs, cols, offset, end, -pixel, pixel);
+				ApplyShadow(verts, uvs, cols, offset, end, -fx, fy);
 
 				offset = end;
 				end = verts.size;
 
-				ApplyShadow(verts, uvs, cols, offset, end, pixel, pixel);
+				ApplyShadow(verts, uvs, cols, offset, end, fx, fy);
 
 				offset = end;
 				end = verts.size;
 
-				ApplyShadow(verts, uvs, cols, offset, end, -pixel, -pixel);
+				ApplyShadow(verts, uvs, cols, offset, end, -fx, -fy);
 			}
 		}
 	}

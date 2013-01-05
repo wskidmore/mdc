@@ -13,6 +13,7 @@ public class Spell : Action
     {
         return true;
     }
+
     virtual public bool CanCast(Character character)
     {
         return true;

@@ -20,7 +20,7 @@ public class TweenPosition : UITweener
 	public Transform cachedTransform { get { if (mTrans == null) mTrans = transform; return mTrans; } }
 	public Vector3 position { get { return cachedTransform.localPosition; } set { cachedTransform.localPosition = value; } }
 
-	override protected void OnUpdate (float factor) { cachedTransform.localPosition = from * (1f - factor) + to * factor; }
+	override protected void OnUpdate (float factor, bool isFinished) { cachedTransform.localPosition = from * (1f - factor) + to * factor; }
 
 	/// <summary>
 	/// Start the tweening operation.
@@ -31,6 +31,12 @@ public class TweenPosition : UITweener
 		TweenPosition comp = UITweener.Begin<TweenPosition>(go, duration);
 		comp.from = comp.position;
 		comp.to = pos;
+
+		if (duration <= 0f)
+		{
+			comp.Sample(1f, true);
+			comp.enabled = false;
+		}
 		return comp;
 	}
 }
